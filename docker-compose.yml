@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  docker:
+    image: docker:stable-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+      DOCKER_TLS_VERIFY: '1'
+      DOCKER_CERT_PATH: /certs/client
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - /lib/modules:/lib/modules:ro
+      - certs-client:/certs/client
+      - docker-graph:/var/lib/docker
+    networks:
+      docker:
+        aliases:
+          - kind-control-plane
+
+  kind:
+    build:
+      dockerfile: Dockerfile.kindind
+      context: .
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_CERTDIR: /certs
+      DOCKER_TLS_VERIFY: '1'
+      DOCKER_CERT_PATH: /certs/client
+      DOCKER_BUILDKIT: '1'
+      DOCKER_IN_DOCKER_ENABLED: 'true'
+    working_dir: /root
+    volumes:
+      - certs-client:/certs/client
+    networks:
+      - docker
+    depends_on:
+      - docker
+
+volumes:
+  certs-client:
+  docker-graph:
+
+networks:
+  docker:
